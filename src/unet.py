@@ -1,7 +1,6 @@
 import types
 import tensorflow as tf
 layers =  tf.layers
-from tf_src import tf_logger as log
 
 
 var_init = tf.variance_scaling_initializer
@@ -48,14 +47,12 @@ class Model:
         concat_axis = 1 if Model.DATA_FORMAT=='channels_first' else 3
 
         def model_fn(inputs):
-            log.tensor_shape(inputs)
             outputs = []
 
             for i, f in enumerate(Model.FILTER_COUNT):
                 with tf.variable_scope('downconv-{}'.format(i)):
                     inputs = Model.conv(inputs, f)
                     outputs.append(inputs)
-                    log.tensor_shape(inputs)
                     inputs = Model.down_sample(inputs)
 
             with tf.variable_scope('intermediary_conv'):
@@ -70,18 +67,16 @@ class Model:
                     inputs = Model.conv(inputs, f)
                     if output_pyramid:
                         label_pyramid.append(Model.conv(inputs,
-                                                        self.dataset.NUM_LABELS,
+                                                        self.dataset.NUM_CLASSES,
                                                         activation=None,
                                                         name='pyramid_conv'))
 
-                    log.tensor_shape(inputs)
 
             with tf.variable_scope('out_conv'):
                 inputs = Model.conv(inputs,
-                                    self.dataset.NUM_LABELS,
+                                    self.dataset.NUM_CLASSES,
                                     activation=None,
                                     name='conv')
-                log.tensor_shape(inputs)
 
             if output_pyramid:
                 return label_pyramid + [inputs]
@@ -153,71 +148,70 @@ class Model:
         return (-10 * y) + 50
 
     def train(self):
-        x, y = self.dataset.train
+        x, y, w = self.dataset.train
         logits = self.build_graph(x)
 
-        tf.summary.image('input_image', x)
-        tf.summary.image('output', Model._segmap(logits))
-        tf.summary.image('label', Model._segmap(y))
+        if Model.DATA_FORMAT=='channels_first':
+            tf.summary.image('input_image', tf.transpose(x, [0, 2, 3, 1]))
+            tf.summary.image('output', Model._segmap(tf.transpose(logits, [0, 2, 3, 1])))
+            tf.summary.image('label', Model._segmap(tf.transpose(y, [0, 2, 3, 1])))
+        else:
+            tf.summary.image('input_image', x)
+            tf.summary.image('output', Model._segmap(logits))
+            tf.summary.image('label', Model._segmap(y))
 
-        optimize = self.optimizer(self.loss_func(logits, y))
 
-        metrics = self.train_metrics(logits, y)
+        optimize = self.optimizer(self.loss_func(logits, y, w))
+
+        metrics = self.train_metrics(logits, y, w)
 
         return optimize, metrics
 
     def test(self):
-        x, y = self.dataset.test
+        x, y, w = self.dataset.test
         logits = self.build_graph(x)
 
-        #tf.summary.image('input_image', x)
-        #tf.summary.image('output', Model._segmap(logits))
-        #tf.summary.image('label', Model._segmap(y))
-
-        metrics = self.test_metrics(logits, y)
+        metrics = self.test_metrics(logits, y, w)
 
         return logits, metrics
 
-    def train_metrics(self, logits, y):
+    def train_metrics(self, logits, y, w):
         if self._train_metrics:
-            return self._train_metrics(logits, y)
+            return self._train_metrics(logits, y, w)
 
         def f(logits, ys):
-            log.warn('No training metrics set')
             return logits, ys
 
         self._train_metrics = f
 
-        return self._train_metrics(logits, y)
+        return self._train_metrics(logits, y, w)
 
-    def test_metrics(self, logits, y):
+    def test_metrics(self, logits, y, w):
         if self._test_metrics:
-            return self._test_metrics(logits, y)
+            return self._test_metrics(logits, y, w)
 
-        def f(logits, y):
-            log.warn('No testing metrics set')
+        def f(logits, y, w):
             return tf.constant(0)
 
         self._test_metrics = f
-        return self._test_metrics(logits, y)
+        return self._test_metrics(logits, y, w)
 
     def optimizer(self, loss):
         if self._optimizer:
             return self._optimizer(loss)
 
         def optimize(loss):
-            log.warn('No optimizer set')
+            None
 
         self._optimizer = optimize
 
         return self._optimizer(loss)
 
-    def loss_func(self, x, y):
+    def loss_func(self, x, y, w):
         if self._loss_func:
             return self._loss_func(x, y)
 
-        def f(self, x, y):
-            log.warn('Using default loss cross entropy')
+        def f(self, x, y, w):
             return tf.nn.softmax_cross_entropy_with_logits_v2(logits=x,
                                                               labels=y)
 
@@ -233,19 +227,17 @@ def main():
     info = f"""
     CANDELS Morphological Classification -- Semantic Segmentation
     ConvNet
-    FILTER_COUNT:   {Model.FILTER_COUNT}
-    DATA_FORMAT:    {Model.DATA_FORMAT}
     """
 
     tf.logging.set_verbosity(tf.logging.DEBUG)
     print(info)
 
     in_shape = [5,1,40,40]
-    expect_out_shape = [5,5,40,40]
+    expect_out_shape = [5,9,40,40]
 
     x = tf.placeholder(tf.float32, shape=in_shape)
 
-    mock_dataset = types.SimpleNamespace(NUM_LABELS=5)
+    mock_dataset = types.SimpleNamespace(NUM_CLASSES=9)
     Model.DATA_FORMAT = 'channels_first'
     m = Model(mock_dataset, True)
 

@@ -13,14 +13,14 @@ class DataProvider:
      Round, Inbetween, Cigar, Clumpy]
     """
     NUM_REPEAT = 1
-    NUM_CLASSES = 9
-    BACKGROUND = np.array([0,0,0,0,1,0,0,0,0], dtype=np.float32)
+    NUM_CLASSES = 8
+    BACKGROUND = np.array([0,0,0,1,0,0,0,0], dtype=np.float32)
 
     LABELS_COLS = ['SMOOTH', 'FEATURES_DISK', 'STAR_ARTIFACT',
-                   'ROUND', 'IN_BETWEEN', 'CLUMPY']
+                   'ROUND', 'IN_BETWEEN', 'CIGAR', 'CLUMPY']
 
     WEIGHTED_LABELS_COLS = ['W_SMOOTH', 'W_FEATURES_DISK', 'W_STAR_ARTIFACT',
-                            'W_ROUND', 'W_IN_BETWEEN', 'W_CLUMPY']
+                            'W_ROUND', 'W_IN_BETWEEN', 'W_CIGAR', 'W_CLUMPY']
 
     def __init__(self,
                  img_fits_files,
@@ -218,7 +218,7 @@ class DataProvider:
                 if len(vals)==0:
                     vals = np.zeros(DataProvider.NUM_CLASSES - 1)
                 # insert 0 for background
-                lbl_map[i] = np.insert(vals, 4, 0).astype(np.float32)
+                lbl_map[i] = np.insert(vals, 3, 0).astype(np.float32)
 
         return lbl_map
 
@@ -234,7 +234,7 @@ class DataProvider:
     def _standardize(self, x):
         with tf.name_scope('image_standardization'):
             x = tf.image.per_image_standardization(x)
-            x = tf.reduce_mean(x, axis=-1, keepdims=True)
+            #x = tf.reduce_mean(x, axis=-1, keepdims=True)
 
         return x
 
