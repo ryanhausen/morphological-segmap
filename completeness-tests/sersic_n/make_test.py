@@ -48,8 +48,7 @@ def main(save_noise_separate=False, num_samples=1000):
     tinytim = {b:fits.getdata(tinytim_path(b)) for b in bands}
 
     src_funcs = [
-        ('deVaucouleurs', generate_source.deVaucouleurs),
-        ('exponential', generate_source.exponential)
+        ('sersic_n', generate_source.sersic_n),
     ]
     for name, src_func in src_funcs:
         for re in [3, 5, 7, 9]:
@@ -90,9 +89,10 @@ def main(save_noise_separate=False, num_samples=1000):
             for b in bands:
                 rms[b] = get_rms(dim, re, num_samples, all_noise[b])
 
-            sn_ratios = [0.5, 1, 2, 4, 6, 8, 10, 12, 15]
+            sn_ratio = 10
+            sersic_n_vals = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-            for i, sn_ratio in enumerate(sn_ratios):
+            for i, n in enumerate(sersic_n_vals):
                 raw_src = src_func([dim, dim],
                                    centers[i][0],
                                    centers[i][1],
@@ -113,18 +113,6 @@ def main(save_noise_separate=False, num_samples=1000):
             if 'tests' not in os.listdir():
                 os.mkdir('tests')
             fits_write(img, './tests', '{}-re-{}'.format(name, re))
-
-
-
-
-
-
-
-
-
-
-
-
 
 if __name__=='__main__':
     main()

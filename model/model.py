@@ -166,16 +166,3 @@ class Model(unet.Model):
 
     def inference(self, x):
         return tf.nn.softmax(self.build_graph(x, False))
-
-
-
-
-
-
-
-
-
-
-
-
-
