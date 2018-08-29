@@ -1,0 +1,57 @@
+These are the params used to generate the tiny tim psf's used in the
+completeness tests. You download the files we used, or generate your own:
+
+raw_files: https://drive.google.com/a/ucsc.edu/file/d/1yYkMVdCsYOUoazcznu0u2oySQxFPhNNQ/view?usp=sharing
+
+
+NOTE: we use the distorted PSFs
+
+Tiny Tim
+http://www.stsci.edu/hst/observatory/focus/TinyTim
+
+
+H Band
+Parameters
+
+Camera 	WFC3 IR channel
+Pixel Position 	512 512
+Filter 	F160W
+Spectrumtype 	Power law : F(lambda) = lambda^i
+Spectrumvalue 	-2
+PSF diameter 	3.0 [arcsec]
+Focus 	0.0 [microns secondary mirror despace]
+
+J Band
+Parameters
+
+Camera 	WFC3 IR channel
+Pixel Position 	512 512
+Filter 	F125W
+Spectrumtype 	Power law : F(lambda) = lambda^i
+Spectrumvalue 	-2
+PSF diameter 	3.0 [arcsec]
+Focus 	0.0 [microns secondary mirror despace]
+
+V Band
+Parameters
+
+Camera 	ACS - Wide Field Channel
+Chip 	1
+Pixel Position 	512 512
+Filter 	F606W
+Spectrumtype 	Power law : F(lambda) = lambda^i
+Spectrumvalue 	-2
+PSF diameter 	3.0 [arcsec]
+Focus 	0.0 [microns secondary mirror despace]
+
+Z Band
+Parameters
+
+Camera 	ACS - Wide Field Channel
+Chip 	1
+Pixel Position 	512 512
+Filter 	F850LP
+Spectrumtype 	Power law : F(lambda) = lambda^i
+Spectrumvalue 	-2
+PSF diameter 	3.0 [arcsec]
+Focus 	0.0 [microns secondary mirror despace]

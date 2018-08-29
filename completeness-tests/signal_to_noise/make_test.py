@@ -10,6 +10,11 @@ import numpy as np
 from astropy.io import fits
 from scipy.ndimage import convolve
 
+def fits_write(a, path, file_name):
+    if file_name in os.listdir(path):
+        os.remove(os.path.join(path, file_name))
+    fits.PrimaryHDU(a).writeto(os.path.join(path, file_name))
+
 
 def get_rms(size, re, num_samples, noise):
     ys, xs = np.meshgrid(np.arange(size), np.arange(size))
@@ -35,7 +40,7 @@ def get_rms(size, re, num_samples, noise):
 
 
 def main(save_noise_separate=False, num_samples=1000):
-    bands = 'HJVZ'
+    bands = 'hjvz'
     noise_path = lambda s: '../../data/noise/{}.fits'.format(s)
     noise = {b:fits.getdata(noise_path(b)) for b in bands}
 
@@ -48,6 +53,7 @@ def main(save_noise_separate=False, num_samples=1000):
     ]
     for name, src_func in src_funcs:
         for re in [3, 5, 7, 9]:
+            print('Working on {} for re {}'.format(name, re))
             # make the noise that we'll add the sources to big enough so that we
             # can fit 3 sources across and 3 down with 6*re space between
             # each of the sources. Each source will need 6*re on either side
@@ -63,10 +69,9 @@ def main(save_noise_separate=False, num_samples=1000):
                 if 'noise' not in os.listdir():
                     os.mkdir('./noise')
 
-                raw_noise_path = lambda s, r: './noise/{}-re-{}.fits'.format(s, r)
+                f_name = '{}-re-{}.fits'
                 for b in bands:
-                    raw_noise = fits.PrimaryHDU(data=all_noise[b])
-                    raw_noise.writeto(raw_noise_path(b, re))
+                    fits_write(all_noise[b], './noise', f_name.format(b, re))
 
             center_ys = [6*re, 18*re, 30*re]
             center_xs = [6*re, 18*re, 30*re]
@@ -88,16 +93,27 @@ def main(save_noise_separate=False, num_samples=1000):
             sn_ratios = [0.5, 1, 2, 4, 6, 8, 10, 12, 15]
 
             for i, sn_ratio in enumerate(sn_ratios):
+                print('Index:{} - SN:{} - ({},{}) - [{},{}]'.format(i, sn_ratio, centers[i][0], centers[i][1], dim, dim))
                 raw_src = src_func([dim, dim],
                                    centers[i][0],
                                    centers[i][1],
                                    1,
                                    re,
                                    simple=False)
-                source = []
+                source = {}
                 for band in rms:
                     src_adj = raw_src * (sn_ratio * rms[band] / raw_src[rs[i]<re].sum())
                     src_adj = convolve(src_adj, tinytim[band])
+                    source[band] = src_adj
+
+                for b in bands:
+                    all_noise[b] = all_noise[b] + source[b]
+
+            img = np.array([all_noise[b] for b in 'hjvz'])
+
+            if 'tests' not in os.listdir():
+                os.mkdir('tests')
+            fits_write(img, './tests', '{}-re-{}'.format(name, re))
 
 
 
