@@ -56,8 +56,10 @@ def main(save_noise_separate=False, num_samples=1000):
             # make the noise that we'll add the sources to big enough so that we
             # can fit 3 sources across and 3 down with 6*re space between
             # each of the sources. Each source will need 6*re on either side
-            # so in total 3 * (2 * 6re) pixels in both directions
-            dim = 3 * (2 * 6 * re)
+            # so in total 3 * (2 * 6re) pixels in both directions. Then pad
+            # with and additional 40 so that each source out to 6re gets
+            # classified with samples from each pixel from the classifier
+            dim = 3 * (2 * 6 * re) + 80
             all_noise = {}
             for b in bands:
                 noise_img = np.random.choice(noise[b], size=[dim,dim])
@@ -72,8 +74,8 @@ def main(save_noise_separate=False, num_samples=1000):
                 for b in bands:
                     fits_write(all_noise[b], './noise', f_name.format(b, re))
 
-            center_ys = [6*re, 18*re, 30*re]
-            center_xs = [6*re, 18*re, 30*re]
+            center_ys = np.array([6*re, 18*re, 30*re]) + 40
+            center_xs = np.array([6*re, 18*re, 30*re]) + 40
 
             ys, xs = np.meshgrid(np.arange(dim), np.arange(dim))
 
