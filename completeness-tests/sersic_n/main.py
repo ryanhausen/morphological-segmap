@@ -17,7 +17,7 @@ def main():
         os.mkdir('./output')
 
     # create or clear directories and run tests
-    for test_file in os.listdir('./tests'):
+    for test_file in sorted(os.listdir('./tests')):
         out_dir = './output/{}'.format(test_file.replace('.fits', ''))
         if out_dir not in os.listdir('./tests'):
             os.mkdir(out_dir)

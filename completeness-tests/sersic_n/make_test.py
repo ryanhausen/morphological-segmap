@@ -98,6 +98,7 @@ def main(save_noise_separate=False, num_samples=1000):
                                    centers[i][1],
                                    1,
                                    re,
+                                   n,
                                    simple=False)
                 source = {}
                 for band in rms:
@@ -112,7 +113,12 @@ def main(save_noise_separate=False, num_samples=1000):
 
             if 'tests' not in os.listdir():
                 os.mkdir('tests')
-            fits_write(img, './tests', '{}-re-{}'.format(name, re))
+
+            fits_write(img, './tests', '{}-re-{}.fits'.format(name, re))
+
+            for f in os.listdir('.'):
+                if 'cache_vals' in f:
+                    os.remove(f)
 
 if __name__=='__main__':
     main()
