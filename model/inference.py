@@ -63,7 +63,7 @@ class Classifier:
 
         num_batches = final_y * final_x // batch_size
 
-        for _ in tqdm(range(num_batches)):
+        for _ in tqdm(range(num_batches+1)):
             batch = []
             batch_idx = []
 
@@ -127,12 +127,9 @@ class Classifier:
     # http://docs.astropy.org/en/stable/generated/examples/io/skip_create-large-fits.html
     @staticmethod
     def _create_file(f_name, shape, dtype):
-        print('Making {}...'.format(f_name))
-
         stub_size = [100, 100]
         if len(shape)==3:
-            stub_size.insert(0, 5)
-
+            stub_size.append(5)
         stub = np.zeros(stub_size, dtype=dtype)
 
         hdu = fits.PrimaryHDU(data=stub)
@@ -195,7 +192,7 @@ class Classifier:
         if out_type in ['rank_vote', 'both']:
             for f in ranking:
                 _f = with_out_dir(f)
-                Classifier._create_file(_f, shape, np.float32)
+                Classifier._create_file(_f, list(shape) + [5], np.float32)
                 hdul = fits.open(_f, mode='update', memmap=True)
                 hduls.append(hdul)
                 data[f] = hdul[0].data
@@ -224,18 +221,24 @@ class Classifier:
 
     @staticmethod
     def _run_model(batch):
+        batch = np.transpose(batch, axes=[0, 2, 3, 1])
 
         if Classifier.__graph is None:
-            model_params = tf.contrib.training.HParams()
-            with open('model_config.json', 'r') as f:
-                model_params.override_from_dict(json.load(f))
+            get_local = lambda f: os.path.join(os.path.dirname(__file__), f)
 
-            model = Model(model_params, Classifier.DATASET, 'channels_last')
+            model_file = get_local('model_config.json')
+            with open(model_file, 'r') as f:
+                model_params = tf.contrib.training.HParams(**json.load(f))
+
+            dataset = Classifier.DATASET(5)
+            model = Model(model_params, dataset, 'channels_last')
             Classifier.__graph = model.inference(Classifier.X)
             saver = tf.train.Saver()
             Classifier.__session = tf.Session()
+
+            weights_dir = get_local('model_weights')
             saver.restore(Classifier.__session,
-                          tf.train.latest_checkpoint('./model_weights'))
+                          tf.train.latest_checkpoint(weights_dir))
 
         return Classifier.__session.run(Classifier.__graph,
                                         feed_dict={Classifier.X:batch})
@@ -307,11 +310,12 @@ class Classifier:
 
         count = prev_count + update
 
-        final_n = np.ones_like(n)
-        for y,x in final_map:
-            final_map[y, x] = n[y, x]
+        return count
+        # final_n = np.ones_like(n)
+        # for y,x in final_map:
+        #     final_n[y, x] = n[y, x]
 
-        return count / final_n
+        # return count / final_n
 
     @staticmethod
     def _update_outputs(data, labels, batch_idx, out_type):
@@ -324,7 +328,7 @@ class Classifier:
 
             ns = data['n'][ys, xs]
             ns = ns + (Classifier.N_UPDATE * Classifier.UPDATE_MASK)
-            data['n'] = ns
+            data['n'][ys, xs] = ns
 
             final_map = Classifier._get_final_map(data['n'].shape, y, x)
             if out_type in ['mean_var', 'both']:
@@ -350,10 +354,11 @@ class Classifier:
                 ranked = l.argsort().argsort()
 
                 for j, morph in enumerate(Classifier.MORPHOLOGIES):
+                    # TODO: figure out why the dims are transposed here
                     prev_count = data[morph][:, ys, xs]
 
                     count = Classifier._updated_count(ns,
-                                                      ranked[j, :, :],
+                                                      ranked[:, :, j],
                                                       prev_count,
                                                       Classifier.UPDATE_MASK,
                                                       final_map)
