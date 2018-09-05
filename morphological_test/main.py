@@ -115,13 +115,15 @@ def aggregate_classifications(src_dir):
         morphs = ['spheroid', 'disk', 'irregular', 'point_source', 'background']
         data = {}
 
+        xs = ys = slice(5,-5)
         for m in morphs:
-            data[m] = safe_fits(os.path.join(output_dir, 'top_{}.fits'.format(m)))
+            m_path = os.path.join(output_dir, 'top_{}.fits'.format(m))
+            data[m] = safe_fits(m_path)[ys, xs]
 
         # H Band Flux
-        flux = safe_fits(os.path.join(src_dir, src, 'data.fits'))[0, :, :]
+        flux = safe_fits(os.path.join(src_dir, src, 'data.fits'))[0, ys, xs]
 
-        ours = get_classification(flux, 
+        ours = get_classification(flux,
                                   data['spheroid'],
                                   data['disk'],
                                   data['irregular'],
@@ -133,14 +135,14 @@ def aggregate_classifications(src_dir):
 
     with open('outputs.csv', 'w') as f:
         f.write('ID,l_sph,l_dk,l_irr,l_ps,l_unk,sph,dk,irr,ps,bkg,agg\n')
-        for s, l, p, a in tqdm(zip(srcs, labels, predictions, agreements), 
+        for s, l, p, a in tqdm(zip(srcs, labels, predictions, agreements),
                                desc='writing'):
-            
+
             line = s + ','
             line += ','.join([str(v) for v in l]) + ','
             line += ','.join([str(v) for v in p]) + ','
             line += str(a) + '\n'
-            
+
             f.write(line)
 
 def classify_img_dir(img_dir):
@@ -181,7 +183,7 @@ def make_figs():
     labels = ['Spheroid', 'Disk', 'Irregular', 'Point Source']
     plt.figure(figsize=(10,10))
     plot_confusion_matrix(confusion_matrix(lbls, preds), labels, normalize=True)
-    plt.savefig('normed_confusion.pdf', dpi=600)   
+    plt.savefig('normed_confusion.pdf', dpi=600)
 
 
 
@@ -206,4 +208,4 @@ def main(remove_prev_classifications=True,
 if __name__=='__main__':
     main(remove_prev_classifications=False,
          classify_pixel=False,
-         aggregate_classification=False)
+         aggregate_classification=True)

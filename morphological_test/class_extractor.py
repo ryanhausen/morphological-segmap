@@ -10,7 +10,7 @@ def safe_fits(fits_file):
     del f
     return img
 
-
+import matplotlib.pyplot as plt
 def make_segmap(bkg):
     markers = np.zeros_like(bkg)
     markers[bkg>0.1] = 1
