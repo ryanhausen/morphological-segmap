@@ -6,3 +6,5 @@ model/__pycache__/
 completeness-tests/__pycache__/
 
 completeness-tests/sersic_n/__pycache__/
+
+morphological_test/__pycache__/
