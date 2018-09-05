@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 from astropy.io import fits
 
 def fits_write(a, path, file_name):
@@ -7,7 +8,7 @@ def fits_write(a, path, file_name):
         os.remove(os.path.join(path, file_name))
     fits.PrimaryHDU(a).writeto(os.path.join(path, file_name))
 
-def main(size=[5000, 5000]):
+def main(size=[1000, 1000]):
     if 'tests' not in os.listdir():
         os.mkdir('tests')
 

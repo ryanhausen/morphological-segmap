@@ -63,7 +63,7 @@ class Classifier:
 
         num_batches = final_y * final_x // batch_size
 
-        for _ in tqdm(range(num_batches+1)):
+        for _ in tqdm(range(num_batches+1), desc='Classifying', unit='batch'):
             batch = []
             batch_idx = []
 
@@ -97,7 +97,7 @@ class Classifier:
 
     @staticmethod
     def _validate_files(h, j, v, z):
-        Classifier._variables_not_none('hjvz', [h,         j, v, z])
+        Classifier._variables_not_none('hjvz', [h, j, v, z])
 
         arrays = []
         for f in [h, j, v, z]:
