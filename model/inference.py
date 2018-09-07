@@ -6,6 +6,7 @@ from collections import namedtuple
 import numpy as np
 from astropy.io import fits
 import tensorflow as tf
+from tensorflow.python.client import device_lib
 from tqdm import tqdm
 
 from model import Model
@@ -32,15 +33,32 @@ class Classifier:
                        z=None,
                        out_dir='.',
                        batch_size=1000,
-                       out_type='both'):
-        h, j, v, z = Classifier._validate_files(h, j, v, z)
+                       out_type='both',
+                       single_thread=True):
 
-        Classifier.classify_arrays(h=h,
-                                   j=j,
-                                   v=v,
-                                   z=z,
-                                   out_dir=out_dir,
-                                   batch_size=batch_size)
+        if single_thread:
+            h, j, v, z = Classifier._validate_files(h, j, v, z)
+
+
+            Classifier.classify_arrays(h=h,
+                                       j=j,
+                                       v=v,
+                                       z=z,
+                                       out_type=out_type,
+                                       out_dir=out_dir,
+                                       batch_size=batch_size)
+        else:
+            gpus = Classifier._get_gpu_ids()
+            num_gpus = len(gpus)
+
+
+
+
+
+
+
+
+
 
     @staticmethod
     def classify_arrays(h=None,
@@ -251,7 +269,7 @@ class Classifier:
         end_x = x==(shape[1] - Classifier.N_UPDATE.shape[1])
 
         if end_y and end_x:
-            for _y in range(0, 35):
+            for _y in range(5, 35):
                 for _x in range(5, 35):
                     final_map.append((_y, _x))
         else:
@@ -364,4 +382,14 @@ class Classifier:
                                                       final_map)
 
                     data[morph][:, ys, xs] = count
+
+    @staticmethod
+    def _get_gpu_ids():
+        gpus = {}
+
+        for device in device_lib.list_local_devices():
+            if device.device_type=='GPU':
+                gpus['GPU:{}'.format(device.name.split(':')[-1])] = None
+
+        return gpus
 

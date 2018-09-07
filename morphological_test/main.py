@@ -162,7 +162,6 @@ def classify_img_dir(img_dir):
                                batch_size=1000)
 
 def classify_pixels(classification_dir, num_processes=2):
-
     img_dirs = [os.path.join(classification_dir, d) for d in os.listdir(classification_dir)]
 
     with Pool(num_processes) as p:
