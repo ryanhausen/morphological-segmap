@@ -1,5 +1,6 @@
 import json
 import os
+from subprocess import Popen
 import time
 from collections import namedtuple
 
@@ -36,7 +37,7 @@ class Classifier:
                        out_type='both',
                        paralell_gpus=True):
 
-        if paralell_gpus:
+        if not paralell_gpus:
             h, j, v, z = Classifier._validate_files(h, j, v, z)
 
 
@@ -48,30 +49,53 @@ class Classifier:
                                        out_dir=out_dir,
                                        batch_size=batch_size)
         else:
+            h, j, v, z = Classifier._validate_files(h, j, v, z)
+
             gpus = Classifier._get_gpu_ids()
             num_gpus = len(gpus)
 
-            # get the size of the input
-            
+            axes_0 = h.shape[0]
+            split_length = (axes_0 + (num_gpus - 1) * 40) // num_gpus
 
+            processes = {g:{} for g in gpus}
+            idx = 0
+            for gpu in tqdm(sorted(gpus)):
+                sub_output_dir = os.path.join(out_dir, str(gpu))
+                os.mkdir(sub_output_dir)
 
-            # split the output and setup dirs
+                start_idx = max(idx - 40, 0)
 
-            # spawn processes
+                if gpu==max(gpus):
+                    end_idx = axes_0
+                else:
+                    end_idx = start_idx + split_length
 
-            # report output?
+                idx = end_idx
 
+                y_split = slice(start_idx, end_idx)
 
+                for name, data in zip('hjvz', [h, j, v, z]):
+                    tmp_location = os.path.join(sub_output_dir,
+                                                '{}.fits'.format(name))
+                    fits.PrimaryHDU(data=data[y_split, :]).writeto(tmp_location)
 
+                Classifier._make_runnable_file(sub_output_dir)
 
+                cmd_string = 'CUDA_VISIBLE_DEVICES={} python main.py'.format(gpu)
+                processes[gpu] = Popen(cmd_string,
+                                       shell=True,
+                                       cwd=sub_output_dir,
+                                       capture_output=True,
+                                       text=True)
 
+            is_running = np.ones([len(gpus)], dtype=np.bool)
 
+            while is_running.any():
+                for i, g in enumerate(sorted(gpus)):
+                    if is_running[i] and processes[g].poll():
+                        is_running[i] = False
 
-
-
-
-
-
+                time.sleep(15*60)
 
 
     @staticmethod
@@ -399,13 +423,44 @@ class Classifier:
 
     @staticmethod
     def _get_gpu_ids():
-        gpus = {}
+        gpus = []
 
         for device in device_lib.list_local_devices():
             if device.device_type=='GPU':
-                gpus['{}'.format(device.name.split(':')[-1])] = None
+                gpus.append(int('{}'.format(device.name.split(':')[-1])))
 
         return gpus
 
+
     @staticmethod
-    def _get_
+    def _make_runnable_file(path):
+        text = [
+            'import sys',
+            'sys.path.append("../model")',
+            'import os',
+            'import numpy as np',
+            'from tqdm import tqdm',
+            'from inference import Classifier',
+            'def main():',
+            '    data_dir = "."',
+            '    output_dir = "./output"',
+            '    if "output" not in os.listdir():',
+            '        os.mkdir("./output")',
+            '    files = {',
+            '        "h":os.path.join(data_dir, "h.fits"),',
+            '        "j":os.path.join(data_dir, "j.fits"),',
+            '        "v":os.path.join(data_dir, "v.fits"),',
+            '        "z":os.path.join(data_dir, "z.fits")',
+            '    }',
+            '    Classifier.classify_files(h=files["h"],',
+            '                              j=files["j"],',
+            '                              v=files["v"],',
+            '                              z=files["z"],',
+            '                              batch_size=2000,',
+            '                              out_dir=output_dir)',
+            'if __name__=="__main__":',
+            '    main()'
+        ]
+
+        with open(os.path.join(path, 'main.py'), 'w') as f:
+            f.write('\n'.join(text))

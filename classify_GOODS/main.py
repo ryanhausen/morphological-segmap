@@ -9,7 +9,7 @@ from tqdm import tqdm
 from inference import Classifier
 
 def main():
-    data_dir = '../data/GOODS'
+    data_dir = '../data/GOODS-Garth'
     output_dir = './output'
 
     if 'output' not in os.listdir():
@@ -27,12 +27,8 @@ def main():
                               v=files['v'],
                               z=files['z'],
                               batch_size=2000,
-                              out_dir=output_dir)
-
-
-
-
-
+                              out_dir=output_dir,
+                              paralell_gpus=True)
 
 
 if __name__=='__main__':
