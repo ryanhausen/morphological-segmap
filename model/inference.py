@@ -34,9 +34,9 @@ class Classifier:
                        out_dir='.',
                        batch_size=1000,
                        out_type='both',
-                       single_thread=True):
+                       paralell_gpus=True):
 
-        if single_thread:
+        if paralell_gpus:
             h, j, v, z = Classifier._validate_files(h, j, v, z)
 
 
@@ -50,6 +50,20 @@ class Classifier:
         else:
             gpus = Classifier._get_gpu_ids()
             num_gpus = len(gpus)
+
+            # get the size of the input
+            
+
+
+            # split the output and setup dirs
+
+            # spawn processes
+
+            # report output?
+
+
+
+
 
 
 
@@ -389,7 +403,9 @@ class Classifier:
 
         for device in device_lib.list_local_devices():
             if device.device_type=='GPU':
-                gpus['GPU:{}'.format(device.name.split(':')[-1])] = None
+                gpus['{}'.format(device.name.split(':')[-1])] = None
 
         return gpus
 
+    @staticmethod
+    def _get_
