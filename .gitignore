@@ -8,3 +8,5 @@ completeness-tests/__pycache__/
 completeness-tests/sersic_n/__pycache__/
 
 morphological_test/__pycache__/
+
+completeness-tests/false_positives/__pycache__/
