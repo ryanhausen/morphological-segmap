@@ -85,7 +85,6 @@ class Classifier:
                 processes[gpu] = Popen(cmd_string,
                                        shell=True,
                                        cwd=sub_output_dir,
-                                       capture_output=True,
                                        text=True)
 
             is_running = np.ones([len(gpus)], dtype=np.bool)
