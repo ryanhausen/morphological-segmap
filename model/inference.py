@@ -35,7 +35,7 @@ class Classifier:
                        out_dir='.',
                        batch_size=1000,
                        out_type='both',
-                       paralell_gpus=True):
+                       paralell_gpus=False):
 
         if not paralell_gpus:
             h, j, v, z = Classifier._validate_files(h, j, v, z)
@@ -84,8 +84,7 @@ class Classifier:
                 cmd_string = 'CUDA_VISIBLE_DEVICES={} python main.py'.format(gpu)
                 processes[gpu] = Popen(cmd_string,
                                        shell=True,
-                                       cwd=sub_output_dir,
-                                       text=True)
+                                       cwd=sub_output_dir)
 
             is_running = np.ones([len(gpus)], dtype=np.bool)
 
@@ -111,10 +110,10 @@ class Classifier:
         hduls, data = Classifier._prepare_out_files(shape, out_dir, out_type)
 
         window_y, window_x = Classifier.N_UPDATE.shape
-        final_y = shape[0] - window_y
-        final_x = shape[1] - window_x
+        final_y = shape[0] - window_y + 1
+        final_x = shape[1] - window_x + 1
 
-        index_gen = Classifier._index_generator(final_y+1, final_x+1)
+        index_gen = Classifier._index_generator(final_y, final_x)
 
         num_batches = final_y * final_x // batch_size
 
@@ -127,9 +126,13 @@ class Classifier:
                     y, x = next(index_gen)
                 except StopIteration:
                     break
+                
                 combined = [b[y:y+window_y, x:x+window_x] for b in bands]
                 batch.append(Classifier._preprocess(np.array(combined)))
                 batch_idx.append((y, x))
+
+            if len(batch)==0:
+                break
 
             batch = np.array(batch)
 
@@ -421,7 +424,10 @@ class Classifier:
                     data[morph][:, ys, xs] = count
 
     @staticmethod
+    # TODO: Don't use tensorflow, use numba maybe?
     def _get_gpu_ids():
+        return [0, 1, 2, 3, 4, 5, 6, 7]
+
         gpus = []
 
         for device in device_lib.list_local_devices():
@@ -435,7 +441,7 @@ class Classifier:
     def _make_runnable_file(path):
         text = [
             'import sys',
-            'sys.path.append("../model")',
+            'sys.path.append("../../../model")',
             'import os',
             'import numpy as np',
             'from tqdm import tqdm',
@@ -456,6 +462,7 @@ class Classifier:
             '                              v=files["v"],',
             '                              z=files["z"],',
             '                              batch_size=2000,',
+            '                              out_type="rank_vote",',
             '                              out_dir=output_dir)',
             'if __name__=="__main__":',
             '    main()'
