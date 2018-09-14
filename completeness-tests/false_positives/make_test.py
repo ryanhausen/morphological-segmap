@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 from astropy.io import fits
+from scipy.ndimage import convolve
 
 def fits_write(a, path, file_name):
     if file_name in os.listdir(path):
@@ -13,10 +14,12 @@ def main(size=[1000, 1000]):
         os.mkdir('tests')
 
     noise_path = lambda s: '../../data/noise/{}.fits'.format(s)
+    tinytim_path = lambda s: '../../data/tinytim/{}.fits'.format(s)
     for b in 'hjvz':
-        noise =fits.getdata(noise_path(b))
+        tiny_tim = fits.getdata(tinytim_path(b))
+        noise = fits.getdata(noise_path(b))
         test = np.random.choice(noise, size=size)
-        fits_write(test, './tests', '{}.fits'.format(b))
+        fits_write(convolve(test, tiny_tim), './tests', '{}.fits'.format(b))
 
 if __name__=='__main__':
     main()

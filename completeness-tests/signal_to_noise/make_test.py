@@ -102,7 +102,7 @@ def main(save_noise_separate=False, num_samples=1000):
                 source = {}
                 for band in rms:
                     src_adj = raw_src * (sn_ratio * rms[band] / raw_src[rs[i]<re].sum())
-                    #src_adj = convolve(src_adj, tinytim[band])
+                    src_adj = convolve(src_adj, tinytim[band])
                     source[band] = src_adj
 
                 for b in bands:

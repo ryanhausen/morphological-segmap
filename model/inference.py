@@ -126,7 +126,7 @@ class Classifier:
                     y, x = next(index_gen)
                 except StopIteration:
                     break
-                
+
                 combined = [b[y:y+window_y, x:x+window_x] for b in bands]
                 batch.append(Classifier._preprocess(np.array(combined)))
                 batch_idx.append((y, x))
